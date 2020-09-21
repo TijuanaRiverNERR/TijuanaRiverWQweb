@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+  <head>
+      <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>TRNERR Oneonta Slough</title>
+    <!--
+    For production (minified) code, use:
+    <script type="text/javascript" src="dygraph-combined.js"></script>
+    -->
+    <!-- jQuery library -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    <!-- Bootstrap core CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug 
+    <link href="../../assets/css/ie10-viewport-bug-workaround.css" rel="stylesheet"> -->
+    <!--Dygraph 1.1.0???? edited project version 
+      TODO: revert to dygraphs repo version listed above-->
+    <script type="text/javascript" src="js/dygraphs/dist/dygraph.js"></script>
+    <script type="text/javascript" src="js/dygraphs/src/extras/synchronizer.js"></script>
+    <script type="text/javascript" src="js/dygraphs/src/extras/crosshair.js"></script>
+
+    <style>
+      html *
+        {font-family: Arial, Helvetica, sans-serif;}
+      .chart-container { 
+        //overflow: hidden; 
+      }
+      .chartandlegend-container {
+        width: 1160;
+        position: relative;
+        overflow: hidden;
+      }
+      .chart { 
+        width: 900px; 
+        height: 150px; 
+        //float: left;
+      }
+      .labels {
+        //float: left; 
+        position: absolute;
+        top: 5px;
+        right: 16px;
+        width: 150px;
+        background: rgba(254, 254, 254,0.8);
+      }
+    </style>
+  </head>
+<body>
+<div class="container">
+      <!-- Static navbar -->
+      <nav class="navbar navbar-default">
+        <div class="container-fluid">
+          <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+              <span class="sr-only">Toggle navigation</span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="./index.html">TRNERR WQ</a>
+          </div>
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="nav navbar-nav">
+          <!--nav dropdowns for LPL project with more than one station:
+              <li class="dropdown active">
+                <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">By Station <span class="caret"></span></a>
+                 <ul class="dropdown-menu">
+                  <li><a href="./lplOneStation.html?site=LPLNW">LPL Northwest</a></li>
+                  <li><a href="./lplOneStation.html?site=LPLNE">LPL Northeast</a></li>
+                  <li><a href="./lplOneStation.html?site=LPLSE">LPL Southeast</a></li>
+                  <li><a href="./lplOneStation.html?site=LPLSW">LPL Southwest</a></li>
+                </ul>
+              </li>
+            </ul>
+          -->
+            <ul class="nav navbar-nav navbar-right">
+              <li><a href="./">OS All Parameters<span class="sr-only">(current)</span></a></li>
+              <li><a href="OSLevels.html">OS Water Levels w La Jolla<span class="sr-only">(current)</span></a></li>
+              <li><a href="about.html">About</a></li>
+            </ul>
+          </div><!--/.nav-collapse -->
+        </div><!--/.container-fluid -->
+      </nav>
+ </div> 
+    <h2>TRNERR Oneonta Slough station water quality with IBWC river gage data</h2></p>
+
+    <p>All data is preliminary and has not undergone any QAQC procedures (please see links below for further information)</p>
+
+    <div class="chart-container">
+      <div class="chartandlegend-container"><div id="div0" class="chart"></div><div class="labels" id="labels0"></div></div>
+      <div class="chartandlegend-container"><div id="div1" class="chart"></div><div class="labels" id="labels1"></div></div>
+      <div class="chartandlegend-container"><div id="div2" class="chart"></div><div class="labels" id="labels2"></div></div>
+      <div class="chartandlegend-container"><div id="div3" class="chart"></div><div class="labels" id="labels3"></div></div>
+      <div class="chartandlegend-container"><div id="div4" class="chart"></div><div class="labels" id="labels4"></div></div>
+    </div>
+
+  <script type="text/javascript">
+    //TODO: test dygraphs versions
+    //TODO: reduce repetition / hardcoding esp in options
+    var station = "TJROS";
+    var dataFile = "getTJData.php"
+    var files = [dataFile + "?site=IBWCtj",
+      dataFile + "?site=" + station + "&param=dissolved_oxygen", 
+      dataFile + "?site=" + station + "&param=water_level", 
+      dataFile + "?site=" + station + "&param=salinity", 
+      dataFile + "?site=" + station + "&param=sea_water_temperature"
+    ];
+    var params = ["DO (mg/l)", "Level (ft NAVD88)", "Salinity (PSU)", "Water Temp (&degF)"];
+    var mylabels = ["DO_mg", "Level_ft", "Salinity", "Temp_F"];
+    var yLabelWidth = 65
+
+    var gs = [];  //declare as array  (vs object?)
+    var blockRedraw = false;
+    var eDate = new Date(); //Today
+    var sDate = eDate - 15 * 24 * 60 * 60 * 1000; // endDate - 2 weeks 
+
+    //IBWC chart:
+    gs.push(
+      new Dygraph(
+          document.getElementById('div0'),
+          files[0], {
+            dateWindow: [ sDate, eDate ], //limit initial range
+            labelsDiv: document.getElementById('labels0'),
+            labelsSeparateLines: true,
+            legend: 'always',
+            axes: {
+              y: {
+                axisLabelWidth: yLabelWidth
+              }
+            },
+            ylabel: 'Tij. River Gage (cms)',
+            colors: ['#8A2908',
+                   '#088A08'],
+            plugins: [
+              new Dygraph.Plugins.Crosshair({
+                direction: 'vertical'
+              })
+            ]
+          }
+      )
+    );
+    //TJROS charts:
+    for (var i = 1; i <= 4; i++) {
+      var opts;
+      //TOP TJROS CHART 
+      var opts_first = {            
+            dateWindow: [ sDate, eDate ], //limit initial range
+            colors: ['#006666'],
+            legend: 'always',
+            axes: {
+              y: {
+                axisLabelWidth: yLabelWidth
+              }
+            },
+            labels: ['Date', mylabels[i - 1]],  
+            labelsDiv: document.getElementById("labels" + i),
+            labelsSeparateLines: true,
+
+            ylabel: params[i - 1],
+            plugins: [
+              new Dygraph.Plugins.Crosshair({
+                direction: "vertical"
+              })
+            ]
+          }
+      //middle TJROS charts
+      var opts_mid = {            
+            dateWindow: [ sDate, eDate ], //limit initial range
+            colors: ['#006666'],
+            legend: 'always',
+            axes : { 
+              y: {
+                axisLabelWidth: yLabelWidth
+              },
+              x :  { 
+                //drawAxis : false,
+                //drawGrid: false,
+                valueFormatter: function (x) {return ''}
+              }
+            },           
+            labels: ['Date', mylabels[i - 1]],  
+            labelsDiv: document.getElementById("labels" + i),
+            labelsSeparateLines: true,
+            ylabel: params[i - 1],
+            plugins: [
+              new Dygraph.Plugins.Crosshair({
+                direction: "vertical"
+              })
+            ]
+          }
+      //bottom TJROS chart
+      var opts_last = {            
+            dateWindow: [ sDate, eDate ], //limit initial range
+            colors: ['#006666'],
+            legend: 'always',
+            axes : {
+              y: {
+                axisLabelWidth: yLabelWidth
+              },
+              x :  { 
+                //drawAxis : false,
+                //drawGrid: false,
+                valueFormatter: function (x) {return ''}
+              }
+            },           
+            labels: ['Date', mylabels[i - 1]],  
+            labelsDiv: document.getElementById("labels" + i),
+            labelsSeparateLines: true,
+            ylabel: params[i - 1],
+            showRangeSelector: true,
+            interactionModel: Dygraph.defaultInteractionModel,
+            plugins: [
+              new Dygraph.Plugins.Crosshair({
+                direction: "vertical"
+              })
+            ]
+          }
+      
+      if (i == 1) {
+        opts = opts_first;
+      } else if (i == 4) {
+        opts = opts_last;
+      } else {
+        opts = opts_mid;
+      }
+      
+      gs.push(
+        new Dygraph(
+            document.getElementById("div" + i),
+            files[i], opts)
+        );
+    }
+    var sync = Dygraph.synchronize(gs, {
+      selection: true,
+      zoom: true,
+      range: false
+    });
+
+  </script>
+Usage: <p>
+<ul>
+  <li>Zoom range of all graphs by selecting a region on one graph (click and drag to select), double click to zoom full extent</li>
+  <li>To pan zoomed region: shift + click and drag</li>
+  <li>Mouse over data points for legend and values</li>
+</ul>
+Please use the following links for verified or QAQCd data:<br><p>
+  <a href=http://cdmo.baruch.sc.edu/>Tijuana River NERR System Wide Monitoring Program data</a><br>
+  <a href=https://www.ibwc.gov/water_data/rtdata.htm>IBWC Stream Gage data for Tijuana River</a><p>
+<!-- end old index -->
+</body>
+</html>
